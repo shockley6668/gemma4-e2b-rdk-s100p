@@ -669,7 +669,190 @@ gemma4_e2b_deploy/
 
 ## 9. 板端部署与 VLM 推理
 
-> 本节留给板端 Agent 编写。
+本节介绍如何将编译好的 HBM 模型部署到 S100P 板端，并运行 Gemma4-E2B VLM 推理。
+
+### 9.1 两条路径：直接跑 vs 自己编译
+
+| | 路径 A：直接跑（推荐） | 路径 B：从源码编译 |
+|---|---|---|
+| **适合** | 想快速体验 VLM 推理的用户 | 想修改 runtime 代码或移植到其他平台的开发者 |
+| **需要** | 下载预编译 HBM + 编译 C++ runtime（~1 min） | 完整 OE-LLM SDK + 本仓库全部代码 |
+| **步骤** | 见下方 9.2 | 见 [board_runtime/README.md](../board_runtime/README.md) |
+
+> 大多数用户只需要**路径 A**：下载模型 → 编译 runtime（板端 gcc 即可，不需要 OE-LLM 编译工具链）→ 直接跑。
+
+### 9.2 路径 A：快速部署（板端 5 分钟）
+
+#### Step 1：下载预编译模型
+
+在 S100P 板端执行：
+
+```bash
+pip install huggingface_hub
+hf download ShockleyWong/gemma4-e2b-rdk-s100p --local-dir ~/gemma4_e2b
+```
+
+下载完成后检查文件完整性：
+
+```bash
+# 验证 SHA256（可选）
+sha256sum ~/gemma4_e2b/model/*.hbm
+
+# 预期输出：
+# 470791849d21cffadb388cc61c8f4b1452078c1722d302fd8a8ac775ee9769f1  ...vit_ptq.hbm
+# 3e4d4940051e4e8dc0cb434e972e7aae75d49504da3fac435e303f68af73a25f  ...lm_..._ptq.hbm
+```
+
+#### Step 2：安装 Python 依赖（tokenizer bridge 需要）
+
+```bash
+pip3 install tokenizers jinja2
+```
+
+#### Step 3：编译 C++ runtime
+
+```bash
+cd gemma4-e2b-rdk-s100p/board_runtime/cpp
+mkdir build && cd build
+cmake ..
+make -j$(nproc)
+# 产出：gemma4_chat, gemma4_server, gemma4_demo, gemma4_text_bench, gemma4_golden_verify
+```
+
+> **注意**：板端编译只需要 `gcc`、`cmake`、`libopencv-dev` 和 Horizon BPU runtime 头文件（`/usr/hobot/`），**不需要** PC 端的 `hbdk4_compiler` 或 `leap_llm`。
+
+#### Step 4：运行 VLM 推理
+
+```bash
+export GEMMA4_HOME=~/gemma4_e2b
+./gemma4_chat
+```
+
+交互示例：
+
+```
+gemma4> /image /path/to/red_panda.jpg
+Processing image... Image loaded (430080 features).
+gemma4> Describe this image
+This is a photograph of a Red Panda resting on a wooden structure.
+It has reddish-brown fur, white accents on its face and chest...
+```
+
+### 9.3 VLM 融合机制（板端实现要点）
+
+板端 runtime 在 Vision→Text 融合时必须严格遵守以下规则，否则会导致输出乱码：
+
+#### ① Vision 特征原样注入
+
+```cpp
+// 正确：直接 std::copy，不做任何后处理
+for (int t = 0; t < 280; ++t) {
+    std::copy(vision_output + t * 1536,
+              vision_output + (t+1) * 1536,
+              inputs_embeds + image_pos[t] * 1536);
+}
+```
+
+**禁止**：
+- ❌ 对 vision features 做 L2-norm 缩放到 text embedding 的 std
+- ❌ 对 vision features 再乘 √1536
+- ❌ 用 IMAGE token 的 embedding 查表值代替 vision 输出
+
+**自检**：注入后打印 std，应在 0.65~0.79 之间（不要强行拉到 1.0）。
+
+#### ② PLE 对 image 位置用 pad embedding
+
+Gemma4 Text 的 Per-Layer Embedding（PLE）有两条路径：
+- **token-identity**：`embed_tokens_per_layer(token_id)`
+- **context-aware**：依赖 `inputs_embeds`
+
+对 image soft token（`token_id=258880`）位置，**token-identity 用 pad（token_id=0）**，不是 258880 的 per-layer embedding。
+
+```cpp
+// Text HBM input[1] (input_ids) 中，image 位置应为 0 (pad)，不是 258880
+for (auto& id : input_ids) {
+    if (id == 258880) id = 0;  // pad_token_id
+}
+```
+
+#### ③ Chat template 格式
+
+Prompt 必须走 `chat_template.jinja`，不能直接拼裸文本：
+
+```
+<bos><|turn>user
+<|image>[258880×280]<image|>What do you see?<turn|>
+<|turn>model
+```
+
+`gemma4_tokenize.py` 脚本会自动处理这个格式化。
+
+### 9.4 验证板端推理正确性
+
+#### Golden mask/KV 对齐
+
+```bash
+# 将 golden_mask_kv/ 放到 $GEMMA4_HOME/golden_mask_kv/
+# （来源：pc_delivery/golden_mask_kv.tar.gz）
+
+export GEMMA4_HOME=~/gemma4_e2b
+./gemma4_golden_verify --prompt prompt_0
+```
+
+预期输出：
+
+```
+input_ids: OK
+position_ids: OK
+inputs_embeds: OK max_diff=0 cosine=1
+full_mask: OK max_diff=0 cosine=1
+sliding_mask: OK max_diff=0 cosine=1
+=== Summary ===
+ALL PASSED
+```
+
+#### VLM 图像测试
+
+| 测试图 | 预期输出 | 板端实际输出 |
+|--------|---------|------------|
+| 红熊猫 | "Red Panda" | ✅ 正确识别 |
+| 骑马跳栏 | "rider and horse jumping over obstacle" | ✅ 正确识别 |
+
+### 9.5 性能参考
+
+S100P 单核 BPU 上的典型性能（`core_num=1`）：
+
+| 阶段 | 耗时 | 说明 |
+|------|------|------|
+| Vision 推理 | ~300 ms | 单张图，ViT 16 层 |
+| Text prefill | ~500 ms | 294 token prompt（VLM） |
+| Text decode | ~200 ms/tok | 单 token 生成 |
+| 端到端 VLM | ~50 s | 294 prompt + 250 输出 tokens |
+
+### 9.6 常见问题
+
+**Q：板端编译报错 `Horizon BPU SDK not found`**
+
+```bash
+# 检查 BPU runtime 是否安装
+ls /usr/hobot/lib/libdnn.so
+ls /usr/include/hobot/dnn/hb_dnn.h
+```
+
+如果缺失，安装 OE-LLM board runtime 包（`hbdk4_runtime_aarch64*.whl` 或板端 image 自带）。
+
+**Q：VLM 输出乱码 / 语义错误**
+
+按以下顺序排查：
+1. 确认 Vision HBM SHA256 = `47079184...`（COCO 重校准版）
+2. 确认注入后 vision features std ≈ 0.65~0.79（不是 1.0）
+3. 确认 `input_ids` 中 image 位置为 `0`（pad），不是 `258880`
+4. 确认 prompt 走 chat template（含 `<|turn>user` / `<|turn>model`）
+5. 跑 `gemma4_golden_verify` 确认 mask/KV 对齐
+
+**Q：输出被截断（只生成 256 tokens）**
+
+KV cache 容量 `kCacheLen=4096` 是 HBM 编译时固定的。prompt + 输出 ≤ 4096。VLM prompt 约 294 tokens，所以最多输出约 3800 tokens。模型遇到 `<turn|>` 会自动停止。
 
 ---
 

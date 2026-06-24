@@ -8,6 +8,8 @@ __pycache__/
 *.hbm
 *.hbo
 *.bin
+# Exception: sentencepiece embedded normalizer rules are build inputs.
+!third_party/tokenizers-cpp/sentencepiece/data/*.bin
 
 # Calibration data (download via scripts)
 calibration_data/images/
@@ -15,6 +17,24 @@ calibration_data/text/*.json
 
 # Build output
 output/
+board_runtime/cpp/build/
+
+# tokenizers-cpp: only the prebuilt libtokenizers_c.a is needed; ignore all
+# rust build intermediates (deps/, incremental/, build-script artifacts).
+third_party/tokenizers-cpp/rust/target/*/
+third_party/tokenizers-cpp/rust/target/**/deps/
+third_party/tokenizers-cpp/rust/target/**/build/
+third_party/tokenizers-cpp/rust/target/**/incremental/
+third_party/tokenizers-cpp/rust/target/**/*.d
+third_party/tokenizers-cpp/rust/target/**/*.rlib
+# sentencepiece bundled docs / examples we don't use
+third_party/tokenizers-cpp/sentencepiece/doc/
+third_party/tokenizers-cpp/sentencepiece/python/
+third_party/tokenizers-cpp/sentencepiece/contrib/
+third_party/tokenizers-cpp/web/
+third_party/tokenizers-cpp/example/
+# abseil-cpp docs (vendored as a build dep, docs not needed)
+third_party/tokenizers-cpp/sentencepiece/third_party/abseil-cpp/*.md
 
 # OS
 .DS_Store

@@ -1,58 +1,63 @@
-# Gemma4-E2B RDK S100P Quantization & Deployment
+# Gemma4-E2B on RDK S100P
 
 [中文](./README_zh.md) | **English**
 
-Google Gemma4-E2B (Vision + Text) PTQ quantization and board deployment for D-Robotics RDK S100P (`march=nash-m`).
+Real-time Vision-Language Model inference for Google **Gemma4-E2B** on the **D-Robotics RDK S100P** board (`march=nash-m`). Runs fully on-device via the BPU — no network, no Python at inference time.
 
-## Directory Structure
-
-```
-gemma4-e2b-quant/
-├── leap_llm_gemma4/          # Gemma4 adaptation code (integrates into OE-LLM leap_llm)
-│   ├── models/gemma4/        #   Model definitions (Vision ViT + Text LLM)
-│   ├── apis/model/           #   API layer (Gemma4VisionApi / Gemma4TextApi)
-│   └── install.sh            #   One-command integration into leap_llm
-│
-├── scripts/
-│   ├── compile/              # Quantization compilation scripts
-│   │   ├── run_vision_compile.sh
-│   │   ├── run_text_compile.sh
-│   │   ├── run_text_decode_resume.sh
-│   │   ├── compile_vision.py
-│   │   ├── compile_text_decode.py
-│   │   └── setup_swap.sh
-│   ├── calibration/          # Calibration data preparation
-│   │   ├── download_coco_images.py
-│   │   └── generate_calib_images.py
-│   └── verify/               # Accuracy verification scripts
-│       ├── quick_text_verify.py
-│       └── run_remote_hbm_verify.sh
-│
-├── board_runtime/            # Board-side inference code (maintained by board agent)
-│
-└── docs/
-    └── QUANTIZATION_TUTORIAL.md   # Full quantization tutorial
-```
+![VLM](https://img.shields.io/badge/VLM-working-green) ![Platform](https://img.shields.io/badge/platform-RDK%20S100P-blue) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
 
 ## Quick Start
 
+### 1. Download the pre-compiled models
+
 ```bash
-# 1. Install OE-LLM SDK (see docs/QUANTIZATION_TUTORIAL.md)
-conda activate oellm
-
-# 2. Integrate Gemma4 code into leap_llm
-cd leap_llm_gemma4 && bash install.sh
-
-# 3. Compile HBM models
-cd scripts/compile
-bash run_vision_compile.sh    # Vision HBM
-bash run_text_compile.sh      # Text HBM
-
-# 4. Verify accuracy
-cd scripts/verify
-python quick_text_verify.py
+pip install huggingface_hub
+hf download ShockleyWong/gemma4-e2b-rdk-s100p --local-dir ~/gemma4_e2b
 ```
 
-## Model Files
+### 2. Build the C++ runtime (on the board)
 
-Pre-compiled HBM files are available on HuggingFace. See `docs/QUANTIZATION_TUTORIAL.md` Appendix.
+Requires the OE-LLM board image plus `cmake`, `g++`, `libopencv-dev`, and `cargo`.
+
+```bash
+cd board_runtime/cpp
+mkdir build && cd build
+cmake ..
+make -j$(nproc)
+```
+
+The first build compiles the bundled `tokenizers-cpp` (native HF tokenizers), which takes a few minutes. Subsequent builds are incremental and fast.
+
+### 3. Run
+
+```bash
+export GEMMA4_HOME=~/gemma4_e2b
+./gemma4_chat
+```
+
+Then in the prompt:
+
+```
+gemma4> /image photo.jpg          # load an image for the next message
+gemma4> Describe this image       # ask about it
+gemma4> /reset                    # clear conversation + KV cache
+gemma4> /quit                     # exit
+```
+
+## What's in this repo
+
+| Path | Purpose |
+|------|---------|
+| `board_runtime/cpp/` | **Board-side C++ inference runtime** — the `gemma4_chat` entry point plus text/vision engines, KV cache, and a native C++ tokenizer (no Python). |
+| `third_party/tokenizers-cpp/` | Bundled HuggingFace tokenizers C++ binding + sentencepiece. |
+| `leap_llm_gemma4/` | Gemma4 PyTorch model definitions for the OE-LLM quantization toolchain. |
+| `scripts/` | PC-side scripts for HBM compilation, calibration, and verification. |
+| `docs/QUANTIZATION_TUTORIAL.md` | Full guide: quantization → deployment → VLM. |
+
+## Recompiling models from source
+
+If you want to re-quantize or modify the HBM models yourself (requires a PC with 128 GB RAM and the OE-LLM SDK), follow the [full quantization tutorial](./docs/QUANTIZATION_TUTORIAL.md).
+
+## License
+
+MIT
