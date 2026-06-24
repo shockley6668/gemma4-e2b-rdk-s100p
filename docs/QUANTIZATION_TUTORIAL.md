@@ -681,7 +681,7 @@ Pre-compiled HBM model files are available on HuggingFace:
 
 ```bash
 pip install huggingface_hub
-huggingface-cli download <your-hf-org>/gemma4-e2b-rdk-s100p --local-dir ./gemma4_e2b_deploy
+hf download ShockleyWong/gemma4-e2b-rdk-s100p --local-dir ./gemma4_e2b_deploy
 ```
 
 | File | Description |
@@ -703,7 +703,7 @@ sha256sum gemma4_e2b_deploy/model/*.hbm
 
 ```bash
 pip install huggingface_hub
-huggingface-cli download <your-hf-org>/gemma4-e2b-rdk-s100p --local-dir ./gemma4_e2b_deploy
+hf download ShockleyWong/gemma4-e2b-rdk-s100p --local-dir ./gemma4_e2b_deploy
 ```
 
 | 文件 | 说明 |
