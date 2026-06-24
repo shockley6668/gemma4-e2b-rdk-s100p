@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Model weights & large files (download separately, see docs)
+*.safetensors
+*.hbm
+*.hbo
+*.bin
+
+# Calibration data (download via scripts)
+calibration_data/images/
+calibration_data/text/*.json
+
+# Build output
+output/
+
+# OS
+.DS_Store
