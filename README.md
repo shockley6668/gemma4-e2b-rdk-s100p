@@ -1,77 +1,121 @@
-# Gemma4-E2B RDK S100P 量化部署
+# Gemma4-E2B RDK S100P Quantization & Deployment / 量化部署
 
-Google Gemma4-E2B（Vision + Text）在地瓜 RDK S100P 上的 PTQ 量化编译 + 板端推理代码仓库。
+> **English** | [中文](#中文)
 
-## 目录结构
+---
+
+## English
+
+Google Gemma4-E2B (Vision + Text) PTQ quantization and board deployment for D-Robotics RDK S100P (`march=nash-m`).
+
+### Directory Structure
+
+```
+gemma4-e2b-quant/
+├── leap_llm_gemma4/          # Gemma4 adaptation code (integrates into OE-LLM leap_llm)
+│   ├── models/gemma4/        #   Model definitions (Vision ViT + Text LLM)
+│   ├── apis/model/           #   API layer (Gemma4VisionApi / Gemma4TextApi)
+│   └── install.sh            #   One-command integration into leap_llm
+│
+├── scripts/
+│   ├── compile/              # Quantization compilation scripts
+│   │   ├── run_vision_compile.sh
+│   │   ├── run_text_compile.sh
+│   │   ├── run_text_decode_resume.sh
+│   │   ├── compile_vision.py
+│   │   ├── compile_text_decode.py
+│   │   └── setup_swap.sh
+│   ├── calibration/          # Calibration data preparation
+│   │   ├── download_coco_images.py
+│   │   └── generate_calib_images.py
+│   └── verify/               # Accuracy verification scripts
+│       ├── quick_text_verify.py
+│       └── run_remote_hbm_verify.sh
+│
+├── board_runtime/            # Board-side inference code (maintained by board agent)
+│
+└── docs/
+    └── QUANTIZATION_TUTORIAL.md   # Full quantization tutorial
+```
+
+### Quick Start
+
+```bash
+# 1. Install OE-LLM SDK (see docs/QUANTIZATION_TUTORIAL.md)
+conda activate oellm
+
+# 2. Integrate Gemma4 code into leap_llm
+cd leap_llm_gemma4 && bash install.sh
+
+# 3. Compile HBM models
+cd scripts/compile
+bash run_vision_compile.sh    # Vision HBM
+bash run_text_compile.sh      # Text HBM
+
+# 4. Verify accuracy
+cd scripts/verify
+python quick_text_verify.py
+```
+
+### Model Files
+
+Pre-compiled HBM files are available on HuggingFace. See `docs/QUANTIZATION_TUTORIAL.md` Appendix.
+
+---
+
+## 中文
+
+Google Gemma4-E2B（Vision + Text）在地瓜 RDK S100P（`march=nash-m`）上的 PTQ 量化编译与板端部署。
+
+### 目录结构
 
 ```
 gemma4-e2b-quant/
 ├── leap_llm_gemma4/          # Gemma4 适配代码（集成进 OE-LLM leap_llm）
 │   ├── models/gemma4/        #   模型定义（Vision ViT + Text LLM）
-│   │   ├── model.py
-│   │   └── blocks/           #   attention / encoder_layer / mlp
-│   ├── apis/model/
-│   │   ├── gemma4.py         #   Gemma4VisionApi / Gemma4TextApi
-│   │   └── model_factory.patch  # 注册 gemma4-* 到 model_factory.py
-│   └── install.sh            # 一键集成到已安装的 leap_llm
+│   ├── apis/model/           #   API 层（Gemma4VisionApi / Gemma4TextApi）
+│   └── install.sh            #   一键集成进 leap_llm
 │
 ├── scripts/
 │   ├── compile/              # 量化编译脚本
 │   │   ├── run_vision_compile.sh
 │   │   ├── run_text_compile.sh
+│   │   ├── run_text_decode_resume.sh
 │   │   ├── compile_vision.py
 │   │   ├── compile_text_decode.py
 │   │   └── setup_swap.sh
 │   ├── calibration/          # 校准数据准备
 │   │   ├── download_coco_images.py
 │   │   └── generate_calib_images.py
-│   ├── verify/               # 精度验证脚本
-│   │   ├── quick_text_verify.py
-│   │   ├── e2e_vlm_verify.py
-│   │   ├── e2e_vlm_verify_fast.py
-│   │   └── run_remote_hbm_verify.sh
-│   └── oss/                  # OSS 上传 / 部署打包
-│       └── upload_oss_deploy.py
+│   └── verify/               # 精度验证脚本
+│       ├── quick_text_verify.py
+│       └── run_remote_hbm_verify.sh
 │
 ├── board_runtime/            # 板端推理代码（板端 Agent 维护）
-│   └── README.md
 │
-└── docs/                     # 文档
-    ├── QUANTIZATION_TUTORIAL.md   # 量化部署教程
-    └── BOARD_VLM_FIX.md           # VLM 融合修复指南
+└── docs/
+    └── QUANTIZATION_TUTORIAL.md   # 完整量化教程
 ```
 
-## 快速开始
-
-### 1. 环境准备
+### 快速开始
 
 ```bash
-# 安装 OE-LLM SDK（见 docs/QUANTIZATION_TUTORIAL.md §3）
+# 1. 安装 OE-LLM SDK（见 docs/QUANTIZATION_TUTORIAL.md）
 conda activate oellm
-```
 
-### 2. 集成 Gemma4 适配代码
+# 2. 将 Gemma4 代码集成进 leap_llm
+cd leap_llm_gemma4 && bash install.sh
 
-```bash
-cd leap_llm_gemma4
-bash install.sh    # 把 gemma4 代码复制进 leap_llm 并注册
-```
-
-### 3. 量化编译
-
-```bash
+# 3. 编译 HBM 模型
 cd scripts/compile
-bash run_vision_compile.sh   # Vision HBM
-bash run_text_compile.sh     # Text HBM
-```
+bash run_vision_compile.sh    # Vision HBM
+bash run_text_compile.sh      # Text HBM
 
-### 4. 精度验证
-
-```bash
+# 4. 精度验证
 cd scripts/verify
 python quick_text_verify.py
 ```
 
-## 模型文件下载
+### 模型文件
 
-编译产出的 HBM 模型文件从 OSS 获取，见 `docs/QUANTIZATION_TUTORIAL.md` 附录。
+预编译的 HBM 文件已上传 HuggingFace，见 `docs/QUANTIZATION_TUTORIAL.md` 附录。

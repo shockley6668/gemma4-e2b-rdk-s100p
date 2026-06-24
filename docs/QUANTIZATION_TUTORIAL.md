@@ -255,8 +255,9 @@ PLE 的 token-identity 分支对 `258880` 位置**不用** image token 的 per-l
 ### 3.2 安装 SDK + conda + 依赖
 
 ```bash
-# 1. 下载 SDK（从地瓜官方渠道获取）
-wget https://d-robotics-aitoolchain.oss-cn-beijing.aliyuncs.com/llm_s100/1.0.0/D-Robotics_LLM_S100_1.0.0_SDK.tar.gz
+# 1. 下载 OE-LLM SDK（从地瓜官方渠道获取）
+# Download OE-LLM SDK from D-Robotics official channel
+# Refer to: https://developer.d-robotics.cc/
 tar xzf D-Robotics_LLM_S100_1.0.0_SDK.tar.gz
 
 # 2. 创建 conda 环境
@@ -672,45 +673,48 @@ gemma4_e2b_deploy/
 
 ---
 
-## 附录：模型文件下载
+## Appendix: Model Files / 附录：模型文件下载
 
+### English
 
-| 文件           | OSS 路径                                                  | SHA256                                                             |
-| ------------ | ------------------------------------------------------- | ------------------------------------------------------------------ |
-| 完整部署包        | `oss://gemma-model/gemma4_e2b/gemma4_e2b_deploy.tar.gz` | `b7694c9beebf77b3804688c447c2f6f1c8463673da938a33a74dde1c2d6712af` |
-| 仅 Vision HBM | `oss://gemma-model/gemma4_e2b/gemma4-e2b_vit_ptq.hbm`   | `470791849d21cffadb388cc61c8f4b1452078c1722d302fd8a8ac775ee9769f1` |
-| 校验文件         | `oss://gemma-model/gemma4_e2b/gemma4_e2b_deploy.sha256` | —                                                                  |
-
-
-下载命令：
+Pre-compiled HBM model files are available on HuggingFace:
 
 ```bash
-# 安装 ossutil v2
-curl -o ossutil.zip https://gosspublic.alicdn.com/ossutil/v2/2.2.1/ossutil-2.2.1-linux-amd64.zip
-unzip ossutil.zip && chmod +x ossutil-2.2.1-linux-amd64/ossutil
-
-# 配置 AK/SK
-./ossutil-2.2.1-linux-amd64/ossutil config -e oss-cn-beijing.aliyuncs.com
-
-# 下载完整部署包
-./ossutil-2.2.1-linux-amd64/ossutil cp \
-  oss://gemma-model/gemma4_e2b/gemma4_e2b_deploy.tar.gz . \
-  -e oss-cn-beijing.aliyuncs.com
-
-# 校验
-sha256sum -c gemma4_e2b_deploy.sha256
-
-# 解压
-tar xzf gemma4_e2b_deploy.tar.gz
+pip install huggingface_hub
+huggingface-cli download <your-hf-org>/gemma4-e2b-rdk-s100p --local-dir ./gemma4_e2b_deploy
 ```
 
-也可在阿里云控制台生成预签名 URL，板端用 `wget` 下载。
+| File | Description |
+|------|-------------|
+| `gemma4-e2b_vit_ptq.hbm` | Vision HBM (329 MB) |
+| `gemma4-e2b_lm_chunk_256_cache_4096_ptq.hbm` | Text HBM (4.5 GB) |
+| `tok_embeddings.bin` | Token embedding table (1.5 GB) |
+| `tokenizer/` | Tokenizer files |
 
-PC 侧交付文档与验证脚本：
+Verify integrity:
 
 ```bash
-ossutil cp -r oss://gemma-model/gemma4_e2b/pc_delivery/ ./pc_delivery/ \
-  -e oss-cn-beijing.aliyuncs.com
+sha256sum gemma4_e2b_deploy/model/*.hbm
 ```
 
-包含：VLM 修复指南、端到端验证脚本、golden mask/KV 对齐数据、IO dump 等。
+### 中文
+
+预编译的 HBM 模型文件已上传 HuggingFace：
+
+```bash
+pip install huggingface_hub
+huggingface-cli download <your-hf-org>/gemma4-e2b-rdk-s100p --local-dir ./gemma4_e2b_deploy
+```
+
+| 文件 | 说明 |
+|------|------|
+| `gemma4-e2b_vit_ptq.hbm` | Vision HBM（329 MB） |
+| `gemma4-e2b_lm_chunk_256_cache_4096_ptq.hbm` | Text HBM（4.5 GB） |
+| `tok_embeddings.bin` | Token embedding 表（1.5 GB） |
+| `tokenizer/` | Tokenizer 文件 |
+
+校验完整性：
+
+```bash
+sha256sum gemma4_e2b_deploy/model/*.hbm
+```
