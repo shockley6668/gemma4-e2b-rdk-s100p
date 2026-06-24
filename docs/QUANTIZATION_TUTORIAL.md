@@ -565,6 +565,46 @@ prlimit --as=$((110 * 1024**3)) python -u compile_text_decode_resume.py 2>&1 | t
 
 **注意**：`HBDK_JOBS=29` 是开发机 hbdk 编译的并行度，**不是板端 BPU 核数**。
 
+### 6.4 调整上下文长度与编译参数
+
+Text HBM 的几个关键参数是**编译时固定**的，决定了板端推理的上下文容量。默认值如下：
+
+| 参数 | 在哪改 | 默认值 | 说明 |
+|------|--------|--------|------|
+| KV cache 长度 | 环境变量 `CACHE_LEN` | 4096 | 输入 + 输出 token 共享这个预算。越大越占 DDR、编译越久。 |
+| Prefill 分块大小 | 环境变量 `CHUNK_SIZE` | 256 | 每次 prefill 处理的 token 数。越大步数越少、峰值显存越高。 |
+
+这两个参数对应板端的 `gemma4_config.h` 里的 `kCacheLen` / `kChunkSize`，改了 HBM 编译参数后必须同步改源码配置，否则推理会错位。
+
+**示例：把上下文从 4096 扩到 8192**
+
+```bash
+# 1. 重新编译 Text HBM（PC 上，耗时数小时）
+CHUNK_SIZE=512 CACHE_LEN=8192 bash scripts/compile/run_text_compile.sh
+```
+
+```cpp
+// 2. 更新板端 runtime 配置（board_runtime/cpp/gemma4_config.h）
+constexpr int kChunkSize = 512;   // 必须和上面的 CHUNK_SIZE 一致
+constexpr int kCacheLen  = 8192;  // 必须和上面的 CACHE_LEN 一致
+```
+
+```bash
+# 3. 重新编译 runtime
+cd board_runtime/cpp && mkdir build && cd build
+cmake .. && make -j$(nproc)
+```
+
+**仅 runtime 可调的参数**（无需重编 HBM）：
+
+| 参数 | 在哪改 | 默认值 | 说明 |
+|------|--------|--------|------|
+| 滑动窗口 | `kSlidingWindow` | 512 | decode 时滑动注意力的窗口大小，必须 ≤ `kCacheLen`。 |
+| 最大输出 token | `--max-tokens N` 启动参数 | `kCacheLen` | 限制每轮生成长度，运行时传入即可。 |
+
+> **内存代价**：`CACHE_LEN` 翻倍，KV cache 占用的 DDR 也会翻倍。请先确认板端空闲内存足够再加大。
+> HBM 文件名 `gemma4-e2b_lm_chunk_256_cache_4096_ptq.hbm` 里的数字只是命名习惯，改参数后实际产出的文件名不会自动变化，但内容已经是新参数编译的。
+
 ---
 
 ## 7. 精度验证

@@ -56,7 +56,7 @@ gemma4> /quit                     # exit
 
 ## Recompiling models from source
 
-If you want to re-quantize or modify the HBM models yourself (requires a PC with 128 GB RAM and the OE-LLM SDK), follow the [full quantization tutorial](./docs/QUANTIZATION_TUTORIAL.md).
+If you want to re-quantize or modify the HBM models yourself (requires a PC with 128 GB RAM and the OE-LLM SDK), follow the [full quantization tutorial](./docs/QUANTIZATION_TUTORIAL.md). It also covers how to adjust the context length, prefill chunk size, and other compile-time parameters.
 
 ## License
 

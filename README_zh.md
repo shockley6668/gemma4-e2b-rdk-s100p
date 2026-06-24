@@ -56,7 +56,7 @@ gemma4> /quit                     # 退出
 
 ## 从源码重新编译模型
 
-如果你想自己重新量化或修改 HBM 模型（需要 128GB 内存的 PC + OE-LLM SDK），请看 [完整量化教程](./docs/QUANTIZATION_TUTORIAL.md)。
+如果你想自己重新量化或修改 HBM 模型（需要 128GB 内存的 PC + OE-LLM SDK），请看 [完整量化教程](./docs/QUANTIZATION_TUTORIAL.md)。其中也包含如何调整上下文长度、prefill 分块大小等编译参数。
 
 ## 许可证
 
