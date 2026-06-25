@@ -8,6 +8,18 @@
 
 ---
 
+## Demo
+
+![Text chat on S100P](./test3.jpg)
+
+*Text chat on S100P: ask in Chinese, stream the reply on BPU (~6.9 tok/s).*
+
+![VLM demo on RDK S100P](./test1.jpg)
+
+*VLM chat on S100P: load an image, ask in Chinese, stream the reply on BPU (86% BPU utilization).*
+
+---
+
 ## 0. Introduction
 
 This document walks through quantizing and deploying the Gemma4-E2B multimodal model on the RDK S100P — environment setup, model analysis, calibration data, compilation, accuracy verification, packaging, and on-board deployment — including pitfalls we hit and how we fixed them.
