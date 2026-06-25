@@ -44,11 +44,13 @@ E2B 的 Vision 和 Text 是**独立定义**的（`Gemma4Config`），这与 12B 
 
 本文量化与板端部署均在 **RDK S100P** 上完成，编译参数 `--march nash-m`。
 
-| 项      | 值              | 量化影响                       |
-| ------ | -------------- | -------------------------- |
-| RAM    | 12 GB LPDDR5   | 模型+KV+系统需控制在 ~10GB         |
-| BPU    | Nash-M，80 TOPS | `march=nash-m`             |
+
+| 项      | 值              | 量化影响                          |
+| ------ | -------------- | ----------------------------- |
+| RAM    | 12 GB LPDDR5   | 模型+KV+系统需控制在 ~10GB            |
+| BPU    | Nash-M，80 TOPS | `march=nash-m`                |
 | BPU 核数 | **1**          | `core_num=1`、`vit_core_num=1` |
+
 
 ### 1.3 OE-LLM 工具链
 
@@ -390,12 +392,12 @@ python -u $(python -c "import leap_llm; import os; print(os.path.dirname(leap_ll
 | 参数                    | 值                   | 说明                                |
 | --------------------- | ------------------- | --------------------------------- |
 | `--model_name`        | `gemma4-e2b-vision` | 已在 model_factory.py 注册            |
-| `--march`             | `nash-m`            | S100P 对应 march                     |
+| `--march`             | `nash-m`            | S100P 对应 march                    |
 | `--input_model_path`  | HuggingFace 权重目录    | 含 config.json + model.safetensors |
 | `--output_model_path` | 输出目录                | 编译产出会写到这里                         |
 | `--calib_image_path`  | COCO 图目录            | 50 张真实图像                          |
 | `--device`            | `cuda:0`            | GPU 加速校准 forward（CPU 也可，更慢）       |
-| `--vit_core_num`      | `1`                 | 本文编译使用 1 核                      |
+| `--vit_core_num`      | `1`                 | 本文编译使用 1 核                        |
 
 
 **不要加 `--verifier`**：编译后 verifier 会报 `gemma4-e2b-vision does not support LLM`（它试图用 LLM 验证逻辑验证 VLM），HBM 本身是有效的，单独跑 verifier_cli.py 即可。
@@ -515,7 +517,7 @@ python -u $(python -c "import leap_llm; import os; print(os.path.dirname(leap_ll
 | `--chunk_size` | `256`             | prefill 每次处理 256 tokens  |
 | `cache_len`    | `4096`            | KV cache 最大长度            |
 | `--device`     | `cpu`             | Text 校准无 GPU 加速优势，CPU 即可 |
-| `--core_num`   | `1`               | 本文编译使用 1 核             |
+| `--core_num`   | `1`               | 本文编译使用 1 核               |
 
 
 编译会自动导出 `tok_embeddings.bin`：
@@ -569,10 +571,12 @@ prlimit --as=$((110 * 1024**3)) python -u compile_text_decode_resume.py 2>&1 | t
 
 Text HBM 的几个关键参数是**编译时固定**的，决定了板端推理的上下文容量。默认值如下：
 
-| 参数 | 在哪改 | 默认值 | 说明 |
-|------|--------|--------|------|
-| KV cache 长度 | 环境变量 `CACHE_LEN` | 4096 | 输入 + 输出 token 共享这个预算。越大越占 DDR、编译越久。 |
-| Prefill 分块大小 | 环境变量 `CHUNK_SIZE` | 256 | 每次 prefill 处理的 token 数。越大步数越少、峰值显存越高。 |
+
+| 参数           | 在哪改               | 默认值  | 说明                                    |
+| ------------ | ----------------- | ---- | ------------------------------------- |
+| KV cache 长度  | 环境变量 `CACHE_LEN`  | 4096 | 输入 + 输出 token 共享这个预算。越大越占 DDR、编译越久。   |
+| Prefill 分块大小 | 环境变量 `CHUNK_SIZE` | 256  | 每次 prefill 处理的 token 数。越大步数越少、峰值显存越高。 |
+
 
 这两个参数对应板端的 `gemma4_config.h` 里的 `kCacheLen` / `kChunkSize`，改了 HBM 编译参数后必须同步改源码配置，否则推理会错位。
 
@@ -597,10 +601,12 @@ cmake .. && make -j$(nproc)
 
 **仅 runtime 可调的参数**（无需重编 HBM）：
 
-| 参数 | 在哪改 | 默认值 | 说明 |
-|------|--------|--------|------|
-| 滑动窗口 | `kSlidingWindow` | 512 | decode 时滑动注意力的窗口大小，必须 ≤ `kCacheLen`。 |
-| 最大输出 token | `--max-tokens N` 启动参数 | `kCacheLen` | 限制每轮生成长度，运行时传入即可。 |
+
+| 参数         | 在哪改                   | 默认值         | 说明                                   |
+| ---------- | --------------------- | ----------- | ------------------------------------ |
+| 滑动窗口       | `kSlidingWindow`      | 512         | decode 时滑动注意力的窗口大小，必须 ≤ `kCacheLen`。 |
+| 最大输出 token | `--max-tokens N` 启动参数 | `kCacheLen` | 限制每轮生成长度，运行时传入即可。                    |
+
 
 > **内存代价**：`CACHE_LEN` 翻倍，KV cache 占用的 DDR 也会翻倍。请先确认板端空闲内存足够再加大。
 > HBM 文件名 `gemma4-e2b_lm_chunk_256_cache_4096_ptq.hbm` 里的数字只是命名习惯，改参数后实际产出的文件名不会自动变化，但内容已经是新参数编译的。
@@ -613,10 +619,12 @@ cmake .. && make -j$(nproc)
 
 ### 7.1 本模型量化精度
 
-| 模型 | 精度 |
-|------|------|
-| Vision HBM（`gemma4-e2b_vit_ptq.hbm`） | **0.9888** |
+
+| 模型                                                     | 精度         |
+| ------------------------------------------------------ | ---------- |
+| Vision HBM（`gemma4-e2b_vit_ptq.hbm`）                   | **0.9888** |
 | Text HBM（`gemma4-e2b_lm_chunk_256_cache_4096_ptq.hbm`） | **0.9540** |
+
 
 分别验证 Vision、Text 量化输出与浮点模型的接近程度。
 
@@ -713,11 +721,13 @@ gemma4_e2b_deploy/
 
 ### 9.1 两条路径：直接跑 vs 自己编译
 
-| | 路径 A：直接跑（推荐） | 路径 B：从源码编译 |
-|---|---|---|
-| **适合** | 想快速体验 VLM 推理的用户 | 想修改 runtime 代码或移植到其他平台的开发者 |
-| **需要** | 下载预编译 HBM + 编译 C++ runtime（~1 min） | 完整 OE-LLM SDK + 本仓库全部代码 |
-| **步骤** | 见下方 9.2 | 见 [board_runtime/README.md](../board_runtime/README.md) |
+
+|        | 路径 A：直接跑（推荐）                       | 路径 B：从源码编译                                              |
+| ------ | ---------------------------------- | ------------------------------------------------------- |
+| **适合** | 想快速体验 VLM 推理的用户                    | 想修改 runtime 代码或移植到其他平台的开发者                              |
+| **需要** | 下载预编译 HBM + 编译 C++ runtime（~1 min） | 完整 OE-LLM SDK + 本仓库全部代码                                 |
+| **步骤** | 见下方 9.2                            | 见 [board_runtime/README.md](../board_runtime/README.md) |
+
 
 > 大多数用户只需要**路径 A**：下载模型 → 编译 runtime（板端 gcc 即可，不需要 OE-LLM 编译工具链）→ 直接跑。
 
@@ -793,16 +803,10 @@ for (int t = 0; t < 280; ++t) {
 }
 ```
 
-**禁止**：
-- ❌ 对 vision features 做 L2-norm 缩放到 text embedding 的 std
-- ❌ 对 vision features 再乘 √1536
-- ❌ 用 IMAGE token 的 embedding 查表值代替 vision 输出
-
-**自检**：注入后打印 std，应在 0.65~0.79 之间（不要强行拉到 1.0）。
-
 #### ② PLE 对 image 位置用 pad embedding
 
 Gemma4 Text 的 Per-Layer Embedding（PLE）有两条路径：
+
 - **token-identity**：`embed_tokens_per_layer(token_id)`
 - **context-aware**：依赖 `inputs_embeds`
 
@@ -853,21 +857,37 @@ ALL PASSED
 
 #### VLM 图像测试
 
-| 测试图 | 预期输出 | 板端实际输出 |
-|--------|---------|------------|
-| 红熊猫 | "Red Panda" | ✅ 正确识别 |
-| 骑马跳栏 | "rider and horse jumping over obstacle" | ✅ 正确识别 |
+使用 `docs/image1.jpg`（红熊猫）在板端验证：
 
+```bash
+export GEMMA4_HOME=~/gemma4_e2b
+cd board_runtime/cpp/build
+./gemma4_chat
+```
+
+```
+gemma4> /image ../../docs/image1.jpg
+gemma4> What do you see?
+gemma4> 你看到什么，说中文
+```
+
+![板端 VLM 红熊猫测试](./test2.png)
+
+| 测试图 | 预期输出 | 板端实际输出 |
+| ------ | -------- | ------------ |
+| 红熊猫 (`image1.jpg`) | 识别为 Red Panda / 红熊猫，并描述外观 | ✅ 正确识别（见上图） |
 ### 9.5 性能参考
 
 S100P 单核 BPU 上的典型性能（`core_num=1`）：
 
-| 阶段 | 耗时 | 说明 |
-|------|------|------|
-| Vision 推理 | ~300 ms | 单张图，ViT 16 层 |
-| Text prefill | ~500 ms | 294 token prompt（VLM） |
-| Text decode | ~200 ms/tok | 单 token 生成 |
-| 端到端 VLM | ~50 s | 294 prompt + 250 输出 tokens |
+
+| 阶段           | 耗时          | 说明                         |
+| ------------ | ----------- | -------------------------- |
+| Vision 推理    | ~300 ms     | 单张图，ViT 16 层               |
+| Text prefill | ~500 ms     | 294 token prompt（VLM）      |
+| Text decode  | ~200 ms/tok | 单 token 生成                 |
+| 端到端 VLM      | ~50 s       | 294 prompt + 250 输出 tokens |
+
 
 ### 9.6 常见问题
 
@@ -884,6 +904,7 @@ ls /usr/include/hobot/dnn/hb_dnn.h
 **Q：VLM 输出乱码 / 语义错误**
 
 按以下顺序排查：
+
 1. 确认 Vision HBM SHA256 = `47079184...`（COCO 重校准版）
 2. 确认注入后 vision features std ≈ 0.65~0.79（不是 1.0）
 3. 确认 `input_ids` 中 image 位置为 `0`（pad），不是 `258880`
@@ -907,12 +928,14 @@ pip install huggingface_hub
 hf download ShockleyWong/gemma4-e2b-rdk-s100p --local-dir ./gemma4_e2b_deploy
 ```
 
-| File | Description |
-|------|-------------|
-| `gemma4-e2b_vit_ptq.hbm` | Vision HBM (329 MB) |
-| `gemma4-e2b_lm_chunk_256_cache_4096_ptq.hbm` | Text HBM (4.5 GB) |
-| `tok_embeddings.bin` | Token embedding table (1.5 GB) |
-| `tokenizer/` | Tokenizer files |
+
+| File                                         | Description                    |
+| -------------------------------------------- | ------------------------------ |
+| `gemma4-e2b_vit_ptq.hbm`                     | Vision HBM (329 MB)            |
+| `gemma4-e2b_lm_chunk_256_cache_4096_ptq.hbm` | Text HBM (4.5 GB)              |
+| `tok_embeddings.bin`                         | Token embedding table (1.5 GB) |
+| `tokenizer/`                                 | Tokenizer files                |
+
 
 Verify integrity:
 
@@ -929,15 +952,18 @@ pip install huggingface_hub
 hf download ShockleyWong/gemma4-e2b-rdk-s100p --local-dir ./gemma4_e2b_deploy
 ```
 
-| 文件 | 说明 |
-|------|------|
-| `gemma4-e2b_vit_ptq.hbm` | Vision HBM（329 MB） |
-| `gemma4-e2b_lm_chunk_256_cache_4096_ptq.hbm` | Text HBM（4.5 GB） |
-| `tok_embeddings.bin` | Token embedding 表（1.5 GB） |
-| `tokenizer/` | Tokenizer 文件 |
+
+| 文件                                           | 说明                        |
+| -------------------------------------------- | ------------------------- |
+| `gemma4-e2b_vit_ptq.hbm`                     | Vision HBM（329 MB）        |
+| `gemma4-e2b_lm_chunk_256_cache_4096_ptq.hbm` | Text HBM（4.5 GB）          |
+| `tok_embeddings.bin`                         | Token embedding 表（1.5 GB） |
+| `tokenizer/`                                 | Tokenizer 文件              |
+
 
 校验完整性：
 
 ```bash
 sha256sum gemma4_e2b_deploy/model/*.hbm
 ```
+
