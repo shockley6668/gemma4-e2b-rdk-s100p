@@ -62,11 +62,12 @@ gemma4> /quit                     # 退出
 | `third_party/tokenizers-cpp/` | 自带的 HuggingFace tokenizers C++ 绑定 + sentencepiece。 |
 | `leap_llm_gemma4/` | OE-LLM 量化工具链用的 Gemma4 PyTorch 模型定义。 |
 | `scripts/` | PC 端脚本：HBM 编译、校准、精度验证。 |
-| `docs/QUANTIZATION_TUTORIAL.md` | 完整指南：量化 → 部署 → VLM 推理。 |
+| `docs/QUANTIZATION_TUTORIAL_zh.md` | 完整指南：量化 → 部署 → VLM 推理（中文）。 |
+| `docs/QUANTIZATION_TUTORIAL.md` | Full guide: quantization → deployment → VLM (English). |
 
 ## 从源码重新编译模型
 
-如果你想自己重新量化或修改 HBM 模型（需要 128GB 内存的 PC + OE-LLM SDK），请看 [完整量化教程](./docs/QUANTIZATION_TUTORIAL.md)。其中也包含如何调整上下文长度、prefill 分块大小等编译参数。
+如果你想自己重新量化或修改 HBM 模型（需要 128GB 内存的 PC + OE-LLM SDK），请看 [完整量化教程（中文）](./docs/QUANTIZATION_TUTORIAL_zh.md)（[English](./docs/QUANTIZATION_TUTORIAL.md)）。其中也包含如何调整上下文长度、prefill 分块大小等编译参数。
 
 ## 许可证
 

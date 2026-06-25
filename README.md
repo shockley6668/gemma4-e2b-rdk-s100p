@@ -63,12 +63,13 @@ gemma4> /quit                     # exit
 | `third_party/tokenizers-cpp/`   | Bundled HuggingFace tokenizers C++ binding + sentencepiece.                                                                                      |
 | `leap_llm_gemma4/`              | Gemma4 PyTorch model definitions for the OE-LLM quantization toolchain.                                                                          |
 | `scripts/`                      | PC-side scripts for HBM compilation, calibration, and verification.                                                                              |
-| `docs/QUANTIZATION_TUTORIAL.md` | Full guide: quantization → deployment → VLM.                                                                                                     |
+| `docs/QUANTIZATION_TUTORIAL.md` | Full guide: quantization → deployment → VLM (English). |
+| `docs/QUANTIZATION_TUTORIAL_zh.md` | 完整指南：量化 → 部署 → VLM 推理（中文）。 |
 
 
 ## Recompiling models from source
 
-If you want to re-quantize or modify the HBM models yourself (requires a PC with 128 GB RAM and the OE-LLM SDK), follow the [full quantization tutorial](./docs/QUANTIZATION_TUTORIAL.md). It also covers how to adjust the context length, prefill chunk size, and other compile-time parameters.
+If you want to re-quantize or modify the HBM models yourself (requires a PC with 128 GB RAM and the OE-LLM SDK), follow the [full quantization tutorial](./docs/QUANTIZATION_TUTORIAL.md) ([中文](./docs/QUANTIZATION_TUTORIAL_zh.md)).
 
 ## License
 
