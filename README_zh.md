@@ -2,7 +2,7 @@
 
 **中文** | [English](./README.md)
 
-Google **Gemma4-E2B**（视觉 + 语言多模态）在 **地瓜 RDK S100P**（`march=nash-m`）板端的实时 VLM 推理。完全在 BPU 上跑，无需联网，推理时不依赖 Python。
+Google **Gemma4-E2B**（视觉 + 语言多模态）在 **地瓜 RDK S100P**（`march=nash-m`）板端的实时 VLM 推理。完全在 BPU 上跑，无需联网。
 
 ![VLM](https://img.shields.io/badge/VLM-可用-green) ![平台](https://img.shields.io/badge/平台-RDK%20S100P-blue) ![许可证](https://img.shields.io/badge/许可证-MIT-lightgrey)
 

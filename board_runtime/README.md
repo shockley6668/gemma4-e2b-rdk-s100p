@@ -1,14 +1,10 @@
-# Board Runtime — S100P 板端 VLM 推理
+# Board Runtime
 
-> **English** | [中文](#中文)
-
----
-
-## English
+[中文](./README_zh.md) | **English**
 
 C++ inference runtime for Gemma4-E2B VLM on D-Robotics RDK S100P (`march=nash-m`). Loads pre-compiled HBM models and runs real-time Vision-Language inference on the BPU.
 
-### Prerequisites
+## Prerequisites
 
 The S100P board must have the OE-LLM runtime installed:
 
@@ -30,7 +26,7 @@ sudo apt install cmake g++ libopencv-dev cargo
 > `tokenizers-cpp` (vendored in `third_party/`), matching the
 > OpenExplorer_LLM-s600 reference implementation.
 
-### Directory Layout
+## Directory Layout
 
 ```
 board_runtime/
@@ -55,7 +51,7 @@ third_party/
 └── tokenizers-cpp/               Vendored HF tokenizers C++ binding + sentencepiece
 ```
 
-### Build
+## Build
 
 ```bash
 cd board_runtime/cpp
@@ -78,7 +74,7 @@ This produces 5 executables in `build/`:
 | `gemma4_text_bench` | Text-only inference benchmark |
 | `gemma4_golden_verify` | Verify prefill tensors against golden data |
 
-### Download Pre-compiled Models
+## Download Pre-compiled Models
 
 ```bash
 pip install huggingface_hub
@@ -100,7 +96,7 @@ This downloads 3 model files + tokenizer:
     └── config.json
 ```
 
-### Run
+## Run
 
 Set `GEMMA4_HOME` to point at the model directory, then run:
 
@@ -127,11 +123,11 @@ gemma4> Describe this image
 This is a photograph of a Red Panda resting on a wooden structure...
 ```
 
-### Key Design Decisions
+## Key Design Decisions
 
-1. **Vision injection is raw** — ViT output `[280, 1536]` is injected directly into `inputs_embeds` at image soft-token positions (token ID 258880). No L2-norm scaling, no √1536 multiplication.
+1. **Vision injection is raw** — ViT output `[280, 1536]` is injected directly into `inputs_embeds` at image soft-token positions (token ID 249560). No L2-norm scaling, no √1536 multiplication.
 
-2. **PLE uses pad embedding** — At image positions, the Per-Layer Embedding token-identity path uses `pad_token_id=0` (not 258880), matching HuggingFace's `masked_scatter` behavior.
+2. **PLE uses pad embedding** — At image positions, the Per-Layer Embedding token-identity path uses `pad_token_id=0` (not 249560), matching HuggingFace's `masked_scatter` behavior.
 
 3. **Chat template** — Prompts are formatted in C++ to the Gemma turn format (`<bos><|turn>user\n...<turn|>\n<|turn>model\n`), matching `chat_template.jinja`. Tokenization uses the native `tokenizers-cpp` (HF tokenizers), not Python.
 
@@ -139,7 +135,7 @@ This is a photograph of a Red Panda resting on a wooden structure...
 
 5. **Chunked prefill** — Prompts longer than `chunk_size=256` tokens are automatically split into multiple prefill chunks.
 
-### Verification
+## Verification
 
 To verify board inference matches the PC golden data:
 
@@ -147,66 +143,4 @@ To verify board inference matches the PC golden data:
 # Place golden_mask_kv/ under $GEMMA4_HOME/golden_mask_kv/
 ./gemma4_golden_verify --prompt prompt_0
 # Expected: ALL PASSED (cosine=1.0 for all 5 tensors)
-```
-
----
-
-## 中文
-
-S100P 板端 Gemma4-E2B VLM 推理 C++ runtime，加载预编译 HBM 模型在 BPU 上跑实时视觉语言推理。
-
-### 前置条件
-
-板子需安装 OE-LLM runtime：
-
-```bash
-ls /usr/hobot/lib/libdnn.so
-ls /usr/hobot/lib/libhbucp.so
-```
-
-系统依赖：
-
-```bash
-sudo apt install cmake g++ libopencv-dev cargo
-```
-
-> **无需 Python**。分词走原生 C++ `tokenizers-cpp`（vendored 在 `third_party/`），与 OpenExplorer_LLM-s600 参考实现一致。
-
-### 编译
-
-```bash
-cd board_runtime/cpp
-mkdir build && cd build
-cmake ..
-make -j$(nproc)
-```
-
-首次编译会构建 vendored 的 `tokenizers-cpp`（HF tokenizers Rust 绑定 + sentencepiece + abseil），耗时数分钟；之后增量编译很快。
-
-### 下载预编译模型
-
-```bash
-pip install huggingface_hub
-hf download ShockleyWong/gemma4-e2b-rdk-s100p --local-dir ~/gemma4_e2b
-```
-
-### 运行
-
-```bash
-export GEMMA4_HOME=~/gemma4_e2b
-./gemma4_chat
-```
-
-### 核心设计
-
-- **Vision 原样注入**：ViT 输出直接替换 image 位置，不做缩放
-- **PLE 用 pad**：image 位置的 per-layer embedding 用 `pad_token_id=0`
-- **Chat template**：C++ 内拼成 Gemma turn 格式，原生 `tokenizers-cpp` 分词，不依赖 python
-- **零拷贝 KV cache**：prefill/decode 共享内存
-
-### 验证
-
-```bash
-./gemma4_golden_verify --prompt prompt_0
-# 预期：ALL PASSED
 ```

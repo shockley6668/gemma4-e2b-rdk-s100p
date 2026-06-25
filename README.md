@@ -2,9 +2,9 @@
 
 [中文](./README_zh.md) | **English**
 
-Real-time Vision-Language Model inference for Google **Gemma4-E2B** on the **D-Robotics RDK S100P** board (`march=nash-m`). Runs fully on-device via the BPU — no network, no Python at inference time.
+Real-time Vision-Language Model inference for Google **Gemma4-E2B** on the **D-Robotics RDK S100P** board. Runs fully on-device via the BPU.
 
-![VLM](https://img.shields.io/badge/VLM-working-green) ![Platform](https://img.shields.io/badge/platform-RDK%20S100P-blue) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
+VLM Platform License
 
 ## Quick Start
 
@@ -46,13 +46,15 @@ gemma4> /quit                     # exit
 
 ## What's in this repo
 
-| Path | Purpose |
-|------|---------|
-| `board_runtime/cpp/` | **Board-side C++ inference runtime** — the `gemma4_chat` entry point plus text/vision engines, KV cache, and a native C++ tokenizer (no Python). |
-| `third_party/tokenizers-cpp/` | Bundled HuggingFace tokenizers C++ binding + sentencepiece. |
-| `leap_llm_gemma4/` | Gemma4 PyTorch model definitions for the OE-LLM quantization toolchain. |
-| `scripts/` | PC-side scripts for HBM compilation, calibration, and verification. |
-| `docs/QUANTIZATION_TUTORIAL.md` | Full guide: quantization → deployment → VLM. |
+
+| Path                            | Purpose                                                                                                                                          |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `board_runtime/cpp/`            | **Board-side C++ inference runtime** — the `gemma4_chat` entry point plus text/vision engines, KV cache, and a native C++ tokenizer (no Python). |
+| `third_party/tokenizers-cpp/`   | Bundled HuggingFace tokenizers C++ binding + sentencepiece.                                                                                      |
+| `leap_llm_gemma4/`              | Gemma4 PyTorch model definitions for the OE-LLM quantization toolchain.                                                                          |
+| `scripts/`                      | PC-side scripts for HBM compilation, calibration, and verification.                                                                              |
+| `docs/QUANTIZATION_TUTORIAL.md` | Full guide: quantization → deployment → VLM.                                                                                                     |
+
 
 ## Recompiling models from source
 
