@@ -19,14 +19,15 @@ calibration_data/text/*.json
 output/
 board_runtime/cpp/build/
 
-# tokenizers-cpp: only the prebuilt libtokenizers_c.a is needed; ignore all
-# rust build intermediates (deps/, incremental/, build-script artifacts).
-third_party/tokenizers-cpp/rust/target/*/
+# tokenizers-cpp: keep the prebuilt libtokenizers_c.a, ignore cargo
+# intermediates (deps/, incremental/, build scripts, .rlib, .d files).
 third_party/tokenizers-cpp/rust/target/**/deps/
 third_party/tokenizers-cpp/rust/target/**/build/
 third_party/tokenizers-cpp/rust/target/**/incremental/
 third_party/tokenizers-cpp/rust/target/**/*.d
 third_party/tokenizers-cpp/rust/target/**/*.rlib
+# Force-keep the prebuilt static lib even though it lives under rust/target.
+!third_party/tokenizers-cpp/rust/target/**/release/libtokenizers_c.a
 # sentencepiece bundled docs / examples we don't use
 third_party/tokenizers-cpp/sentencepiece/doc/
 third_party/tokenizers-cpp/sentencepiece/python/
