@@ -4,11 +4,11 @@
 
 Google **Gemma4-E2B**（视觉 + 语言多模态）在 **地瓜 RDK S100P**（`march=nash-m`）板端的实时 VLM 推理。完全在 BPU 上跑，无需联网。
 
-![纯文本对话演示](./docs/test3.png)
+![纯文本对话演示](./docs/test3.jpg)
 
 *S100P 板端纯文本对话：中文提问，BPU 流式输出（约 6.9 tok/s）。*
 
-![VLM 演示](./docs/test1.png)
+![VLM 演示](./docs/test1.jpg)
 
 *S100P 板端 VLM 对话：加载图片、中文提问、BPU 流式输出（截图中 BPU 利用率 86%）。*
 

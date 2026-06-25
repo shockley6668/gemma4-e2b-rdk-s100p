@@ -4,11 +4,11 @@
 
 Real-time Vision-Language Model inference for Google **Gemma4-E2B** on the **D-Robotics RDK S100P** board. Runs fully on-device via the BPU.
 
-![Text chat on S100P](./docs/test3.png)
+![Text chat on S100P](./docs/test3.jpg)
 
 *Text chat on S100P: ask about the model in Chinese, stream the reply on BPU (~6.9 tok/s).*
 
-![VLM demo on RDK S100P](./docs/test1.png)
+![VLM demo on RDK S100P](./docs/test1.jpg)
 
 *VLM chat on S100P: load an image, ask in Chinese, stream the reply on BPU (86% utilization shown).*
 
