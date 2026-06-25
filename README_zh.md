@@ -66,4 +66,4 @@ gemma4> /quit                     # 退出
 
 ## 许可证
 
-MIT
+[MIT](./LICENSE)

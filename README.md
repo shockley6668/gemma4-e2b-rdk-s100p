@@ -68,4 +68,4 @@ If you want to re-quantize or modify the HBM models yourself (requires a PC with
 
 ## License
 
-MIT
+[MIT](./LICENSE)
