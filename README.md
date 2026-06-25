@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./docs/image.jpg" alt="Gemma4-E2B on RDK S100P" width="960">
+</p>
+
 # Gemma4-E2B on RDK S100P
 
 [中文](./README_zh.md) | **English**
